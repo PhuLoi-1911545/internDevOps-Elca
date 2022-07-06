@@ -1,0 +1,65 @@
+version: '3'
+services:
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+    - 9090:9090
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --web.enable-admin-api
+    - --web.enable-lifecycle
+    privileged: true
+    volumes:
+    - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+    - cadvisor 
+    restart: unless-stopped
+    networks:
+      - my_net
+
+  cadvisor:
+    container_name: cadvisor
+    image: google/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro   
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 8070:8080
+    depends_on:
+    - redis
+    networks:
+      - my_net
+    restart: unless-stopped
+
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - my_net
+    restart: unless-stopped
+
+  grafana:
+    container_name: gafana
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    networks:
+      - my_net
+    restart: unless-stopped
+    
+  
+
+
+networks:
+  my_net:
